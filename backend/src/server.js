@@ -9,18 +9,21 @@ import notesRoutes from "./routes/notesRoutes.js"; // import the notesRoutes fil
 import { connectDB } from "./config/db.js"; // import the connectDB function
 import rateLimiter from "./middleware/rateLimiter.js"; // import the rateLimiter middleware
 import cors from "cors"; // import the cors middleware
+import path from "path"; // import the path module for handling file paths
 
 const app = express();
 const PORT = process.env.PORT || 5001; // use PORT from .env or default to 5001
+const __dirname = path.resolve(); // get the current directory name
 
-
-
+if (process.env.NODE_ENV !== "production") {
 // Middleware to parse JSON bodies
+
+    app.use(cors({
+        origin: "http://localhost:5173", // allow requests from this origin
+    }));
+}
 app.use(express.json()); // this middleware will parse the JSON body of incoming requests
 // Middleware to parse URL-encoded bodies (for form submissions)
-app.use(cors({
-    origin: "http://localhost:5173", // allow requests from this origin
-}));
 app.use(rateLimiter);
 
 
@@ -59,6 +62,18 @@ app.use("/api/notes", notesRoutes);
 
 //https://localhost:5001/api/notes/21
 // id will be dynamic we don't know what it will be
+
+if (process.env.NODE_ENV === "production") {
+    // if we are in production mode, serve the static files from the frontend/dist folder
+    // this is where the frontend build files will be located
+    app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+    app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname,"../frontend", "dist", "index.html"));
+    });
+}
+
+
 
 
 // first connect to db then start the server
